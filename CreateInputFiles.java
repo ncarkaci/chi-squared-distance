@@ -155,7 +155,7 @@ public class CreateInputFiles {
 		ArrayList<String> other_list = fm.readFile(other_list_fname);
 		if (grand_type.equalsIgnoreCase("Normal")) {
 
-			train_start = Integer.parseInt(other_list.get(200 - 40)); 
+			train_start = Integer.parseInt(other_list.get(total_size - size_per_set)); 
 			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent 
 			+ "/IDAN";
 			testing_output_part = Constants.SUBFOLDER + 
@@ -171,42 +171,6 @@ public class CreateInputFiles {
 		}
 		createTestingFile(train_start, train_end, testing_input_part, testing_output_part, other_list, dictionary);
 	}
-
-/*
-	public void createTestingFile(int start, int end, String current_percent, 
-			int current_fold, HashMap<String, Integer> dictionary, String asm_path, String asm_name) {
-		// Create testing files using the normal files
-		for (int i = start; i < end; i++) {
-			//System.out.println("i=" + i);
-			String asmfname = asm_path + asm_name + i + ".asm";
-			// Store the data read in from this assembly file
-			ArrayList<String> temp_asm = new ArrayList<String>();
-			temp_asm.addAll(fm.readFile(asmfname));
-
-			// Process the data to only save the legitimate instructions
-			ArrayList<String> valid_asm = new ArrayList<String>();
-			valid_asm.addAll(asm.getPossibleOpcodeFromAsm(temp_asm));
-			temp_asm.clear();
-
-			// Use the dictionary to get the corresponding indices for the
-			// instructions
-			ArrayList<Integer> temp_indices = new ArrayList<Integer>();
-			temp_indices = asm.getInFiles(valid_asm, dictionary);
-			System.out.println("temp_indices=" + temp_indices.size());
-			valid_asm.clear();
-
-			// Add the total number of indices for this testing file to the 
-			// first line of the input file
-			int tsize = temp_indices.size();
-			temp_indices.add(0, tsize); 
-
-			// Write the indices into a file
-			String tfname = Constants.OUTPUT_PATH + Constants.SUBFOLDER + 
-			current_percent + "/" + asm_name + current_percent + "f" + current_fold + 
-			"_" + i + ".in";
-			fm.writeInFile(temp_indices, tfname);
-		}
-	} */
 
 	public void createTestingFile(int start, int end, String testing_path, 
 			String output, ArrayList<String> perm_list, HashMap<String, Integer> dictionary) {

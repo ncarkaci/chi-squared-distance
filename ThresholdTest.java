@@ -1,25 +1,60 @@
 import java.util.TreeMap;
 
-public class ThresholdTest implements Comparable {
+public class ThresholdTest implements Comparable<ThresholdTest> {
 	private double score;
 	private boolean isPositive; //if it is a virus = true
+	private double successRate;
+	private double falsePositiveRate;
+	private double truePositiveRate;
 	
 	public ThresholdTest(double value, boolean condition) {
 		score = value;
 		isPositive = condition;
 	}
 	
+	/**
+	 * Get the score for this file.
+	 * @return the score
+	 */
 	public double getScore() {
 		return score;
 	}
 	
+	/**
+	 * This return the status of this score, whether it is a virus or
+	 * normal. Positive for virus, and negative for normal file.
+	 * @return true for virus, false for normal file
+	 */
 	public boolean getIsVirusOrNot() {
 		return isPositive;
 	}
+	
+	public double getSuccessRate() {
+		return successRate;
+	}
+	
+	public double getFalsePostiveRate() {
+		return falsePositiveRate;
+	}
+	
+	public double getTruePositiveRate() {
+		return truePositiveRate;
+	}
+	
+	public void setSuccessRate(double rate) {
+		successRate = rate;
+	}
+	
+	public void setFalsePostiveRate(double rate) {
+		falsePositiveRate = rate;
+	}
+	
+	public void setTruePositiveRate(double rate) {
+		truePositiveRate = rate;
+	}
 
 	@Override
-	public int compareTo(Object otherObj) {
-		ThresholdTest other = (ThresholdTest) otherObj;
+	public int compareTo(ThresholdTest other) {
 		if (score > other.score)
 			return 1;
 		else if (score == other.score)
@@ -28,40 +63,4 @@ public class ThresholdTest implements Comparable {
 			return -1;
 	}
 	
-	
-	
-	
-	/*
-	private double false_positive_rate;
-	private double false_negative_rate;
-	private double threshold;
-	private double FP;
-	private double FN;
-	
-	public ThresholdTest(double line, double fp, double fn) {
-		threshold = line;
-		FP = fp;
-		FN = fn;
-	}
-	
-	public void setFalsePositiveRate(int fpos, int total) {
-		double tpos = total - fpos;
-		false_positive_rate = fpos / fpos + tpos;
-	}
-	
-	public double computeSuccessRate() {
-		double rate = 0.0;
-		false_positive_rate = FP / 40;
-		double true_positive_rate = 1.0 - false_positive_rate;
-		double true_negative_rate = 1.0 - false_negative_rate;
-		
-		rate = FP;
-		
-		return rate;
-	}
-	*/
-
-	
-	
-
 }
