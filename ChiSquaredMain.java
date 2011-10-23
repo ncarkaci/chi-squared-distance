@@ -44,12 +44,9 @@ public class ChiSquaredMain {
 		String filename = output + "DataSetOut" + current_percent + "/" + "Morphed" + current_percent + "f" + current_fold + ".chi";
 		FileManager fm = new FileManager();
 		ArrayList<String> data = fm.readFile(filename);
-		String line = null;
-		double idan_min = 0.0, idan_max = 0.0;
-		double idar_min = 0.0, idar_max = 0.0;
+		// The read in data from the file
 		ArrayList<Double> idan_values = new ArrayList<Double>();
 		ArrayList<Double> idar_values = new ArrayList<Double>();
-
 		double token_value = 0.0;
 
 		for (int i = 0; i < data.size(); i++) {
@@ -60,55 +57,13 @@ public class ChiSquaredMain {
 			} else {
 				idar_values.add(token_value);
 			}
-
 		}
-		ArrayList<Double> sort_idan = new ArrayList<Double>();
-		/*
-		int l = 0;
-		System.out.println("IDAN");
-		for (double v: idan_values) {
-			System.out.println(l + " " + v);
-			l++;
-		}*/
 
-		//Collections.sort(idan_values);
-		//Collections.sort(idar_values);
-		/*int ll = 0;
-		System.out.println("IDAR");
-		for (double v: idan_values) {
-			System.out.println(ll + " " + v);
-			ll++;
-		}*/
-
-
-		//idan_min = getMinValue(idan_values);
-		//idan_max = getMaxValue(idan_values);
-
-		System.out.println("================================================");
-		System.out.format("%10s%20s\n", "IDAN" , "IDAR");
-		System.out.println(idan_values.get(0) + " " + idar_values.get(0));
-		System.out.println(idan_values.get(idan_values.size()-1) + " " + idar_values.get(idar_values.size()-1));
-		int count = countFalsePositives(idar_values, idan_values.get(0));
-		//count = countFalseNegatives(idar_values, idan_max);
-		System.out.println("False Positives: " + count);
-		int count1 = countFalseNegatives(idan_values, idar_values.get(0));
-		//int count1 = countFalsePositives(idar_values, idan_values.get(idan_values.size()-1));
-		System.out.println("False Negatives: " + count1);
-		System.out.println("================================================");
-		System.out.println();
+		//System.out.println("================================================");
+		//System.out.println("================================================");
 		//System.out.println();
-		//findThreshold(idan_values, idar_values);
-		//findFalseNegativeThreshold(idan_values, idar_values);
-		//findIt(idan_values, idar_values);
-		test(idan_values, idar_values);
-		/*
-		int l = 0;
-		System.out.println("IDAN");
-		for (double v: idan_values) {
-			System.out.println(l + " " + v);
-			l++;
-		}
-		 */
+
+		test(idan_values, idar_values, true);
 	}
 	
 	public static void anotherTest(ArrayList<ThresholdTest> dataset, int total_virus, int total_normal) {
@@ -130,22 +85,22 @@ public class ChiSquaredMain {
 			}
 			FN = total_virus - TP;
 			TN = total_normal - FP;
-			false_positive_rate = (double) FP / (FP + TN);
-			true_positive_rate = (double) TP / (TP + FN);
-			success_rate = (double)(TP + TN) / (double)(TP + TN + FP + FN);
+			false_positive_rate = (double) FP / (double) (FP + TN);
+			true_positive_rate = (double) TP / (double) (TP + FN);
+			success_rate = (double) (TP + TN) / (double) (TP + TN + FP + FN);
 			current.setFalsePostiveRate(false_positive_rate);
 			current.setTruePositiveRate(true_positive_rate);
 			current.setSuccessRate(success_rate);
 		}
 		
 		for (ThresholdTest tt: dataset) {
-			//System.out.println();
-			System.out.format("False positive rate= %.5f \t True positive rate= %.5f \t Success rate= %.5f \n", tt.getFalsePostiveRate(), tt.getTruePositiveRate(), tt.getSuccessRate());
+			System.out.println(tt.getTruePositiveRate() + "\t" + tt.getFalsePostiveRate());
+			//System.out.format("False positive rate= %.5f \t True positive rate= %.5f \t Success rate= %.5f \n", tt.getFalsePostiveRate(), tt.getTruePositiveRate(), tt.getSuccessRate());
 		}
 		
 	}
 
-	public static void test(ArrayList<Double> idan_values, ArrayList<Double> idar_values) {
+	public static void test(ArrayList<Double> idan_values, ArrayList<Double> idar_values, boolean reverse) {
 		// Total of numbers for the normal and virus files
 		int total_virus = idan_values.size();
 		int total_normal = idar_values.size();
@@ -153,17 +108,16 @@ public class ChiSquaredMain {
 		// Build a list of combined scores from the idan and idar files
 		ArrayList<ThresholdTest> dataset = new ArrayList<ThresholdTest>();
 		for (double idan: idan_values) {
-			dataset.add(new ThresholdTest(idan, true));
+			dataset.add(new ThresholdTest(idan, true, reverse));
 		}
 		for (double idar: idar_values) {
-			dataset.add(new ThresholdTest(idar, false));
+			dataset.add(new ThresholdTest(idar, false, reverse));
 		}
 		// Sort the list in ascending order
 		Collections.sort(dataset);
 
-		oldTest(dataset);
+		//oldTest(dataset);
 		anotherTest(dataset, total_virus, total_normal);
-		
 		
 	}
 	
@@ -222,113 +176,10 @@ public class ChiSquaredMain {
 			//System.out.println(false_positive_rate + " ******** " + success_rate);
 			//System.out.println("TP= " + TP + " FN= " + FN + " FP= " + FP + " TN= " + TN);
 			//System.out.format("TP= %d \t FN= %d \t FP= %d \t TN= %d \n", TP, FN, FP, TN);
-			System.out.format("False positive rate= %.5f \t True positive rate= %.5f \t Success rate= %.5f \n", false_positive_rate, true_positive_rate, success_rate);
+			System.out.format("False positive rate=\t %.5f \t True positive rate=\t %.5f \t Success rate=\t %.5f \n", false_positive_rate, true_positive_rate, success_rate);
 		}
 	}
 
-	public static void findIt(ArrayList<Double> idan_values, ArrayList<Double> idar_values) {
-		double threshold_point;
-		int total = idan_values.size() + idar_values.size();
 
-		for (int i = 0; i < idan_values.size(); i++) {
-			int count = countFalsePositives(idar_values, idan_values.get(i));
-			int count2 = countFalseNegatives(idan_values, idan_values.get(i));
-			System.out.println(i + " IDAN: FP " + count + " FN " + (count2 - 1) + " " + idan_values.get(i));
-		}
-		System.out.println("================================================");
-		for (int i = 0; i < idar_values.size(); i++) {
-			int count = countFalsePositives(idar_values, idar_values.get(i));
-			int count2 = countFalseNegatives(idan_values, idar_values.get(i));
-			System.out.println(i + " IDAR: FP " + (count - 1) + " FN " + count2 + " " + idar_values.get(i));
-			// 41
-		}
-
-	}
-
-	public static void findFalseNegativeThreshold(ArrayList<Double> idan_values, ArrayList<Double> idar_values) {
-		ArrayList<Double> numbers = new ArrayList<Double>();
-		int count = 0;
-
-		for (int i = 0; i < idar_values.size(); i++) {
-			double value = idar_values.get(i);
-			count = countFalseNegatives(idan_values, value);
-			numbers.add(count + 0.0);
-		}
-
-		for (Double c: numbers) 
-			System.out.println(c);
-	}
-
-	//false negative
-	public static void findThreshold(ArrayList<Double> idan_values, ArrayList<Double> idar_values) {
-		ArrayList<Double> numbers = new ArrayList<Double>();
-		int count = 0;
-
-		for (int i = 0; i < idan_values.size(); i++) {
-			double value = idan_values.get(i);
-			count = countFalsePositives(idar_values, value);
-			numbers.add(count + 0.0);
-		}
-
-		for (double n: numbers) {
-			System.out.println(n);
-		}
-	}
-
-	/**
-	 * Falsely identifies a normal file as virus file.
-	 * @param data
-	 * @param value
-	 * @return
-	 */
-	public static int countFalsePositives(ArrayList<Double> idar_data, double max_idan_value) {
-		int count = 0;
-
-		for (double current: idar_data) {
-			if (current <= max_idan_value) {
-				count++;
-			} 
-		}
-
-		return count;
-	}
-
-	/**
-	 * Falsely classifies data from the virus files as normal.
-	 * @param idan_data
-	 * @param min_idar_value
-	 * @return
-	 */
-	public static int countFalseNegatives(ArrayList<Double> idan_data, double min_idar_value) {
-		int count = 0;
-
-		for (double current: idan_data) {
-			if (current >= min_idar_value)
-				count++;
-		}
-
-		return count;
-	}
-
-	public static double getMinValue(ArrayList<Double> data) {
-		double min = Double.MAX_VALUE;
-
-		for (double value: data) {
-			if (value < min)
-				min = value;
-		}
-
-		return min;
-	}
-
-	public static double getMaxValue(ArrayList<Double> data) {
-		double max = Double.MIN_VALUE;
-
-		for (double value: data) {
-			if (value > max)
-				max = value;
-		}
-		return max;
-	}
 
 }

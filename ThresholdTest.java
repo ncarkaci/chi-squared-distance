@@ -3,13 +3,15 @@ import java.util.TreeMap;
 public class ThresholdTest implements Comparable<ThresholdTest> {
 	private double score;
 	private boolean isPositive; //if it is a virus = true
+	private boolean reversed; // if true, sort it in reversed order (descending order)
 	private double successRate;
 	private double falsePositiveRate;
 	private double truePositiveRate;
 	
-	public ThresholdTest(double value, boolean condition) {
+	public ThresholdTest(double value, boolean condition, boolean reversed_sort) {
 		score = value;
 		isPositive = condition;
+		reversed = reversed_sort;
 	}
 	
 	/**
@@ -55,12 +57,19 @@ public class ThresholdTest implements Comparable<ThresholdTest> {
 
 	@Override
 	public int compareTo(ThresholdTest other) {
-		if (score > other.score)
-			return 1;
-		else if (score == other.score)
+		if (score > other.score) {
+			if (reversed)
+				return -1;
+			else
+				return 1;
+		} else if (score == other.score) {
 			return 0;
-		else
-			return -1;
+		} else {
+			if (reversed)
+				return 1;
+			else
+				return -1;
+		}
 	}
 	
 }
