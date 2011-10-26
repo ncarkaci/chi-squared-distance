@@ -14,8 +14,11 @@ public class ReadAsmMain {
 	public static void main(String[] args) {
 		String filename = System.getProperty("user.home") + "/Experiment/Lists/CrossValidationList"; //Constants.INDICES_PATH + "CrossValidationList";
 		int num_of_fold = Constants.FOLD;
-		buildVirusInFiles(num_of_fold, filename);
-		//buildNormalInFiles(num_of_fold, filename);
+		//int lll = 42/5;  //(int) Math.ceil(40 * 0.8);
+		
+		//System.out.println(lll);
+		//buildVirusInFiles(num_of_fold, filename);
+		buildNormalInFiles(num_of_fold, filename);
 	}
 	
 	public static void buildVirusInFiles(int num_of_fold, String filename) {
@@ -33,8 +36,8 @@ public class ReadAsmMain {
 			for (int subroutine_code = 0; subroutine_code < 1; subroutine_code += Constants.SUBROUTINE_STEP) {
 				current_percent = dead_code + "s" + subroutine_code;
 				//System.out.println(current_percent);
-				cif.performCrossValidation(current_percent, filename, "Morphed");
-				//cif.performCrossValidation(current_percent, filename, "Unmorphed");
+				//cif.performCrossValidation(current_percent, filename, "Morphed");
+				cif.performCrossValidation(current_percent, filename, "Unmorphed");
 			}
 		} 
 	}
@@ -42,23 +45,25 @@ public class ReadAsmMain {
 	public static void buildNormalInFiles(int num_of_fold, String filename) {
 		// For normal
 		int total_size = 41;
+		int total_virus_size = 200;
 		String current_percent = null;
-		CreateNormalInputFiles nif = new CreateNormalInputFiles(total_size, num_of_fold);
+		//CreateNormalInputFiles nif = new CreateNormalInputFiles(total_size, num_of_fold, total_virus_size);
+		CreateInputFiles nif = new CreateInputFiles(total_size, num_of_fold);
 		ArrayList<ArrayList<Integer>> file_indices1 = nif.getCrossValidationList();
 		
 		// Only need to create these files once
 		// The path including the name (the method will attach the fold # & size)
 		//nif.createCrossValidationIndicesLists("");
 		
-		for (int dead_code = 10; dead_code < 11; dead_code += Constants.DEAD_CODE_STEP) {
+		for (int dead_code = 0; dead_code < 1; dead_code += Constants.DEAD_CODE_STEP) {
 			for (int subroutine_code = 0; subroutine_code < 1; subroutine_code += Constants.SUBROUTINE_STEP) {
 				current_percent = dead_code + "s" + subroutine_code;
 				//System.out.println(current_percent);
 
 				// normal is currently not working using cif
-				//cif.performCrossValidation(current_percent, filename, "Normal");
-				// normal is working on nif
 				nif.performCrossValidation(current_percent, filename, "Normal");
+				// normal is working on nif
+				//nif.performCrossValidation(current_percent, filename, "Normal");
 			}
 		}
 	}

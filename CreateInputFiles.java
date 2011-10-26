@@ -77,12 +77,31 @@ public class CreateInputFiles {
 			//System.out.println(filename);
 			ArrayList<String> perm_list = fm.readFile(filename);
 			//System.out.println("Current fold is " + fold);
+			
+			// Create directories for the data
+			createInputFolders(current_percent);
+			
 			// Create all the necessary input files
 			createInputFiles(perm_list, current_percent, fold);
-			
 
-			// Perform HMM training
 		}
+	}
+	
+	/**
+	 * Create the folders for the training and testing input files.
+	 * @param current_percent The current morphed percent of combinations
+	 */
+	private void createInputFolders(String current_percent) {
+		String training_folder = user_home + "/";
+		
+		if (grand_type.equalsIgnoreCase("Morphed")) {
+			training_folder = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER + current_percent + "/";
+		} else { //for Unmorphed and Normal variants
+			training_folder = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER + "0s0/";
+		} 
+		fm.createDir(training_folder);
+		String testing_folder = user_home + "/" + grand_type + "/Input Data/" + Constants.SUBFOLDER + current_percent + "/";
+		fm.createDir(testing_folder);
 	}
 
 	/************************************************************************
@@ -94,16 +113,10 @@ public class CreateInputFiles {
 	public void createInputFiles(ArrayList<String> perm_list, String current_percent, int current_fold) {
 		ArrayList<String> raw_asm = new ArrayList<String>(); 
 		ArrayList<String> legit_opcode = new ArrayList<String>(); 
-		System.out.println("Start of the createInpuutFiles: " + current_fold);
+		System.out.println("Start of the createInputFiles: " + current_fold);
+		
 		// Creating the training file, testing files, and alphabet file for a fold
 		raw_asm.addAll(getTrainingAsm(current_percent, perm_list));
-		//System.out.println("raw_asm=" + raw_asm.size());
-
-		// Create directories for the data
-		String training_folder = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER + current_percent + "/";
-		fm.createDir(training_folder);
-		String testing_folder = user_home + "/" + grand_type + "/Input Data/" + Constants.SUBFOLDER + current_percent + "/";
-		fm.createDir(testing_folder);
 
 		// Create the unique alphabet for this fold
 		//legit_opcode.addAll(asm.getPossibleOpcodeFromAsm(raw_asm));
@@ -111,7 +124,7 @@ public class CreateInputFiles {
 		raw_asm.clear();
 		ArrayList<String> alpha = asm.getUniqueOpcode(legit_opcode);
 		createAlphabetFile(alpha, current_percent, current_fold);
-		System.out.println("Alpha size is " + alpha.size());
+		
 		// Important opcode with their corresponding indices
 		HashMap<String, Integer> dictionary = asm.getIndicesDictionary(alpha);
 
@@ -120,58 +133,62 @@ public class CreateInputFiles {
 		createTrainingFile(indices, current_percent, current_fold);
 		indices.clear();
 
-		String testing_asm_path = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent + "/";
-		String testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent 
-		+ "/IDAN";
-		String testing_output_part = "IDAN" + current_percent + "f" + current_fold;
+		// The partial path for the testing purposes
+		String testing_input_part = null;
+		String testing_output_part = null;
+
+		int test_start = (int) Math.ceil(total_size * 0.8);
+		int test_end = size_per_set;
 		
-		int train_start = 0;
-		int train_end = size_per_set;
+		// Create the testing files using the remaining dataset from training.
 		if (grand_type.equalsIgnoreCase("Normal")) {
-			train_start = Integer.parseInt(perm_list.get(total_size - size_per_set)); 
-			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS 
-			+ "/IDAR";
-			testing_output_part = Constants.SUBFOLDER + 
-			current_percent + "/" + "IDAR" + current_percent + "f" + current_fold;
+			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS + "/IDAR";
+			testing_output_part = Constants.SUBFOLDER + current_percent + "/IDAR" + current_percent + "f" + current_fold;
 		} else {
-			train_start = Integer.parseInt(perm_list.get(total_size - size_per_set));
-			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent 
-			+ "/IDAN";
-			testing_output_part = Constants.SUBFOLDER + 
-			current_percent + "/" + "IDAN" + current_percent + "f" + current_fold;
+			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent + "/IDAN";
+			testing_output_part = Constants.SUBFOLDER + current_percent + "/IDAN" + current_percent + "f" + current_fold;
 		}
-		//System.out.println("train_end " + train_end +", and should be " + (train_start + 40) + " and start " + train_start);
-
-
 		//createTestingFile(train_start, train_end, current_percent, current_fold, dictionary, testing_asm_path, "IDAN");
-		createTestingFile(train_start, train_end, testing_input_part, testing_output_part, perm_list, dictionary);
+		createTestingFile(test_start, test_end, testing_input_part, testing_output_part, perm_list, dictionary);
 
-		String normal_asm_path = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS + "/";
-		testing_output_part = "IDAR" + current_percent + "f" + current_fold;
-		//createTestingFile(0, 41, current_percent, current_fold, dictionary, normal_asm_path, "IDAR");
-		//createTestingFile(0, testing_input_part, testing_output_part, perm_list, dictionary);
-	
-		String other_list_fname = user_home + "/Experiment/Lists/" + "CrossValidationList" + current_fold + "_200.log";
-		ArrayList<String> other_list = fm.readFile(other_list_fname);
+		// Create the testing files for the comparing dataset.
+		ArrayList<String> other_list = new ArrayList<String>();
 		if (grand_type.equalsIgnoreCase("Normal")) {
-
-			train_start = Integer.parseInt(other_list.get(total_size - size_per_set)); 
+			String other_list_fname = user_home + "/Experiment/Lists/" + "CrossValidationList" + current_fold + "_200.log";
+			other_list = fm.readFile(other_list_fname);
+			int virus_total_size = 200;
+			// Only use one fold of the dataset for the testing files.
+			test_start = (int) Math.ceil(virus_total_size * 0.8);
+			test_end = virus_total_size / num_of_fold; //40
+			
 			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent 
 			+ "/IDAN";
 			testing_output_part = Constants.SUBFOLDER + 
 			current_percent + "/" + "IDAN" + current_percent + "f" + current_fold;
-			train_end = 40;
-		} else {
-			train_start = 0; //Integer.parseInt(perm_list.get(total_size - size_per_set));
-			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS 
-			+ "/IDAR";
-			testing_output_part = Constants.SUBFOLDER + 
-			current_percent + "/IDAR" + current_percent + "f" + current_fold;
-			train_end = 41;
+			
+			createTestingFile(test_start, test_end, testing_input_part, testing_output_part, other_list, dictionary);
+		} else { 
+			// for Morphed and Unmorphed, all data from the normal files will be used
+			test_start = 0;
+			test_end = 41;
+			for (int ol = test_start; ol < test_end; ol++)
+				other_list.add(String.valueOf(ol));
+			
+			testing_input_part = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS + "/IDAR";
+			testing_output_part = Constants.SUBFOLDER + current_percent + "/IDAR" + current_percent + "f" + current_fold;		
+			createTestingFile(test_start, test_end, testing_input_part, testing_output_part, other_list, dictionary);
 		}
-		createTestingFile(train_start, train_end, testing_input_part, testing_output_part, other_list, dictionary);
 	}
 
+	/**
+	 * Create the testing files.
+	 * @param start
+	 * @param end
+	 * @param testing_path
+	 * @param output
+	 * @param perm_list
+	 * @param dictionary
+	 */
 	public void createTestingFile(int start, int end, String testing_path, 
 			String output, ArrayList<String> perm_list, HashMap<String, Integer> dictionary) {
 		String asm_filename = null; int index = 0;
@@ -182,7 +199,9 @@ public class CreateInputFiles {
 				asm_filename = testing_path + perm_list.get(i) + ".asm"; 
 				index = Integer.parseInt(perm_list.get(i));
 			} else {
-				asm_filename = testing_path + i + ".asm"; index = i;
+				//asm_filename = testing_path + i + ".asm"; index = i;
+				asm_filename = testing_path + perm_list.get(i) + ".asm"; 
+				index = Integer.parseInt(perm_list.get(i));
 			}
 			//String asm_filename = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent 
 			//+ "/IDAN" + perm_list.get(i) + ".asm";
@@ -221,76 +240,106 @@ public class CreateInputFiles {
 		fm.writeInFile(temp_indices, output_filename);	
 	}
 
+	/**
+	 * Read the files that will be used to create the training file.
+	 * The training file in this test is based on 5-fold cross-validation,
+	 * therefore the 80% of the dataset will be used for building a
+	 * training file. 
+	 * @param current_percent The current morphed percentage for dead 
+	 * code and subroutine code.
+	 * @param perm_list The list that contain the dataset's indices.
+	 * @return All the instructions read from the 80% dataset.
+	 */
 	public ArrayList<String> getTrainingAsm(String current_percent, ArrayList<String> perm_list) {
 		ArrayList<String> raw_asm = new ArrayList<String>(); 
+		int num_of_train_files = total_size - size_per_set;
 
 		// Creating the training file, testing files, and alphabet file for a fold
 		String fname = null;
 		if (grand_type.equalsIgnoreCase("Morphed")) {
-			for (int i = 0; i < total_size - size_per_set; i++) {
+			for (int i = 0; i < num_of_train_files; i++) {
 				fname = Constants.PATH_NAME + Constants.SUBFOLDER + current_percent + "/IDAN" + perm_list.get(i) + ".asm";
 				raw_asm.addAll(fm.readFile(fname));
+				System.out.println("getTrainingAsm: " + fname);
 			}
 		} else if (grand_type.equalsIgnoreCase("Unmorphed")) {
-			for (int i = 0; i < total_size - size_per_set; i++) {
+			for (int i = 0; i < num_of_train_files; i++) {
 				fname = Constants.PATH_NAME + Constants.SUBFOLDER + "0s0/IDAN" + perm_list.get(i) + ".asm";
 				raw_asm.addAll(fm.readFile(fname));
 			}
 		} else { // for Normal
-			for (int i = 0; i < total_size - size_per_set; i++) {
+			for (int i = 0; i < num_of_train_files; i++) {
+				System.out.println("In getTrainingAsm " + total_size + " " + size_per_set + " list is : " + perm_list.get(i));
 				fname = Constants.PATH_NAME + Constants.SUBFOLDER_OTHERSETS + "/IDAR" + perm_list.get(i) + ".asm";
 				raw_asm.addAll(fm.readFile(fname));
 			}
 		}
-		System.out.println("getTrainingAsm: " + fname);
+		//System.out.println("getTrainingAsm: " + fname + " size= " + num_of_train_files);
 		return raw_asm;
 	}
-	
+
+	/**
+	 * Create the training alphabet file with the unique alphabet 
+	 * given. If the file is already existed, it will not overwrite 
+	 * the file. 
+	 * Please make sure to delete the file if you want new data.
+	 * @param alpha The unique alphabet.
+	 * @param current_percent The current morphed percentage for dead 
+	 * code and subroutine code.
+	 * @param current_fold The current fold for the cross-validation 
+	 * experiment.
+	 */
 	public void createAlphabetFile(ArrayList<String> alpha, 
 			String current_percent, int current_fold) {
 		int alpha_size = alpha.size();
 		String afilename = null;
-		
+
 		if (grand_type.equalsIgnoreCase("Morphed")) {
 			afilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
 				+ current_percent + "/IDAN" + current_percent + "f" 
 				+ current_fold + ".alphabet";
 		} else if (grand_type.equalsIgnoreCase("Unmorphed")) {
 			afilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
-			+ "0s0/IDAN0s0f" 
-			+ current_fold + ".alphabet";
-		} else {
+				+ "0s0/IDAN0s0f" + current_fold + ".alphabet";
+		} else { // for Normal
 			afilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
-			+ "0s0/IDAR0s0f" 
-			+ current_fold + ".alphabet";
+				+ "0s0/IDAR0s0f" + current_fold + ".alphabet";
 		}
 		if (new File(afilename).exists()) // it will not overwrite existing files
 			return;
-		
+
 		fm.writeFile(alpha_size, alpha, afilename);
 	}
-	
+
+	/**
+	 * Create the training in file with the given indices given. If the 
+	 * file is already existed, it will not overwrite the file. 
+	 * Please make sure to delete the file if you want new data.
+	 * @param indices Indices for the training input file.
+	 * @param current_percent The current morphed percentage for dead 
+	 * code and subroutine code.
+	 * @param current_fold The current fold for the cross-validation 
+	 * experiment.
+	 */
 	public void createTrainingFile(ArrayList<Integer> indices, String current_percent, int current_fold) {
 		int size = indices.size();
 		indices.add(0, size); // Add the size of this training file to the first line of the input file
 		String tfilename = null;
-		
+
 		if (grand_type.equalsIgnoreCase("Morphed")) {
 			tfilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
 				+ current_percent + "/IDAN" + current_percent + "f" 
 				+ current_fold + ".in";
 		} else if (grand_type.equalsIgnoreCase("Unmorphed")) {
 			tfilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
-			+ "0s0/IDAN0s0f" 
-			+ current_fold + ".in";
-		} else {
+				+ "0s0/IDAN0s0f" + current_fold + ".in";
+		} else { // For Normal
 			tfilename = user_home + "/" + grand_type + "/TrainFiles/" + Constants.SUBFOLDER 
-			+ "0s0/IDAR0s0f" 
-			+ current_fold + ".in";
+				+ "0s0/IDAR0s0f" + current_fold + ".in";
 		}
 		if (new File(tfilename).exists()) // it will not overwrite existing files
 			return;
-		//System.out.println("In createTrainingFile " + tfilename);
+		
 		fm.writeInFile(indices, tfilename); 
 	}
 }
