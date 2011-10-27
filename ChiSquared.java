@@ -5,10 +5,21 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map;
 
+/**
+ * Chi-Squared class is used to perform the Pearson's Chi-Squared 
+ * calculation and the Chi-Squared distribution calculation.
+ * @author annietoderici
+ *
+ */
 public class ChiSquared {
+	// The path to the testing files
 	private String input_path;
+	// The path to the training files
 	private String train_path;
+	// The path for the Chi-Squared scores to be written to
 	private String output_path;
+	// The type of training files - could be either Morphed, 
+	// Unmorphed, or Normal
 	private String grand_type;
 
 	public ChiSquared(String input, String train, String output, String type) {
@@ -18,7 +29,13 @@ public class ChiSquared {
 		grand_type = type;
 	}
 
-	public void startTest(String current_percent, int current_fold) {
+	/**
+	 * This is the first method that will start performing the Pearson's
+	 * Chi-Squared test on all of the data from the specified folder.
+	 * @param current_percent The current morphed percent of combinations
+	 * @param current_fold
+	 */
+	public void startPearsonTest(String current_percent, int current_fold) {
 		String match = current_percent + "f" + current_fold; //"0s10f0";
 		String input = input_path + "DataSetOut" + current_percent + "/"; //"/Users/annietoderici/Morphed/Input Data/DataSetOut0s10/";
 		String train = train_path + "DataSetOut" + current_percent + "/"; //"/Users/annietoderici/Morphed/TrainFiles/DataSetOut0s10/";
@@ -27,16 +44,25 @@ public class ChiSquared {
 		//fm.createDir(output);
 
 		ArrayList<String> raw_indices = new ArrayList<String>();
+		// Read the training IN files, and save the frequencies here
 		HashMap<Integer, Double> expected_frequency = new HashMap<Integer, Double>();
-		raw_indices = fm.readFile(train + "IDAN" + match + ".in");
+		if (grand_type.equalsIgnoreCase("Morphed")) {
+			raw_indices = fm.readFile(train + "IDAN" + match + ".in");
+		} else if (grand_type.equalsIgnoreCase("Unmorphed")) {
+			raw_indices = fm.readFile(train_path + "DataSetOut0s0/IDAN0s0f" + current_fold + ".in");
+		} else { // it is Normal
+			raw_indices = fm.readFile(train_path + "DataSetOut0s0/IDAR0s0f" + current_fold + ".in");
+		}
 		expected_frequency = getFrequencyCounts(raw_indices);
 
+		// Get all the testing files' names
 		ArrayList<String> titles = fm.getListOfFilenamesFromDir(input);
 		ArrayList<String> chi_values = new ArrayList<String>();
-		int k = 0;
+
 		for (String current: titles) {
+			// Only perform the test on the desired percent combination
 			if (current.contains(match)) {
-				//String current = titles.get(0);
+				// Read the testing file from the given full path + filename
 				ArrayList<String> observed_asm = fm.readFile(input + current);
 				HashMap<Integer, Double> observed_frequency = getFrequencyCounts(observed_asm);
 
@@ -45,7 +71,6 @@ public class ChiSquared {
 			}
 		}
 		fm.writeFile(chi_values, output + grand_type + match + ".chi");
-
 	}
 
 	/**
@@ -148,7 +173,7 @@ public class ChiSquared {
 	 * @param x is correspond to the desired D squared 
 	 * @param k is the degrees of freedom (# of distinct instructions - 1)
 	 */
-	private double ChiSquared(double x, int k) {
+	private double chiSquaredDistribution(double x, int k) {
 		double chi = 0;
 
 		chi = (Math.pow(x, ((double)k/2)-1) * Math.exp(-x/2)) / (Math.pow(2, (double)k/2) * gamma((double)k/2));
@@ -156,16 +181,26 @@ public class ChiSquared {
 		return chi;
 	}
 
+	/**
+	 * Compute the Chi-Squared distribution using the probability density 
+	 * function formula.
+	 * @param alpha The type I error rate.
+	 * @param current_percent The current dataset's percent combination
+	 * @param current_fold The current fold of this dataset
+	 * @return the Chi-Squared value
+	 */
 	public double computeChiSquaredDistribution(double alpha, 
 			String current_percent, int current_fold) {
 		String train = train_path + "DataSetOut" + current_percent + "/";
 		String afile = "IDAN" + current_percent + "f" + current_fold + ".alphabet";
 		double chi = 0.0;
-		int degree = 39;
+		// The degree of freedom
+		int degree = 0;
 
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(train + afile));
 			String line = null;
+			// The number of unique alphabet is the first line from the file
 			if ((line = reader.readLine()) != null) {
 				degree = Integer.parseInt(line);
 			}
@@ -179,7 +214,7 @@ public class ChiSquared {
 	}
 
 	/**
-	 * 
+	 * This is the cdf of Chi-Squared distribution.
 	 * @param alpha
 	 * @param k The degree of freedom.
 	 * @return
@@ -188,7 +223,7 @@ public class ChiSquared {
 		double sum = 0, x = 0, delta = 0.01;
 
 		while (sum < alpha) {
-			sum += ChiSquared(x, k);
+			sum += chiSquaredDistribution(x, k);
 			x += delta;
 		}
 		return x - delta;

@@ -107,7 +107,8 @@ public class CreateInputFiles {
 	/************************************************************************
 	 * 
 	 * @param perm_list
-	 * @param current_percent
+	 * @param current_percent The current morphed percentage for dead 
+	 * code and subroutine code.
 	 * @param current_fold
 	 ***********************************************************************/
 	public void createInputFiles(ArrayList<String> perm_list, String current_percent, int current_fold) {
